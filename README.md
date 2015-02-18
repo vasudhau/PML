@@ -1,1 +1,2 @@
-# PML
+This report analyzes to quantify how well an individual will perform  a particular activity. In this project, the goal is to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. People were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset). For the report to be  reproducible, I have used set.seed(). For predictions I have used random forest becuase the results are mostly accurate.
+
