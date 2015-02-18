@@ -1,0 +1,108 @@
+---
+title: "Practical Machine Language Project"
+author: "Vasudha Upadhyaya"
+date: "Wednesday, February 11, 2015"
+output: html_document
+---
+
+
+#### Synposis
+
+This report analyzes to quantify how well an individual will perform  a particular activity. In this project, the goal is to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. People were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset). For the report to be  reproducible, I have used set.seed(). For predictions I have used random forest becuase the results are mostly accurate.
+
+### Basic settings
+
+```{r}
+echo = TRUE  # Always make code visible
+options(scipen = 1)  # Turn off scientific notations for numbers
+
+library(caret)
+library(kernlab)
+library(randomForest)
+setInternet2(TRUE)
+```
+
+## Data Cleaning and Processing
+The most latest data -traing and testing  are downloaded and saved as pml-traing.csv and pml-testing.csvWe read the generated csv file.To clean the data, the first row index and all colomuns with NA were removed. . 
+
+```{r}
+rm(list = ls()) 
+# Read cleaned training and testing data 
+
+train_url<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+test_url<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+download.file(train_url,destfile="pml-training.csv")
+download.file(test_url,destfile="pml-testing.csv")
+
+train<-read.csv("pml-training.csv",na.strings=c("NA",""))
+test<-read.csv("pml-testing.csv",na.strings=c("NA",""))
+
+training<-train[,-c(1:7)]
+set.seed(333)
+```
+
+###Building data sets for training 
+
+Using 70% for training and 30% for Cross Validation. None generated for testing since that set is already provided.
+
+```{r}
+inTrain<-createDataPartition(training$classe, p=0.75, list=FALSE)
+training_train<-training[inTrain,]
+training_test<-training[-inTrain,]
+
+dim(training_train)
+dim(test)
+
+training_train<-as.data.frame(training_train)
+clean_train<-training_train[,colSums(is.na(training_train))==0]
+clean_test<-training_test[,colSums(is.na(training_test))==0]
+
+
+```
+#### Define cross-validation experiment
+
+```{r}
+
+
+fitControl = trainControl( method = "cv", number = 4)
+# Perform the cross validation
+validation <- train(classe ~ ., data = clean_train, method = "rf", 
+  trControl = fitControl)
+bestTune<-validation$bestTune$mtry
+
+```
+
+### Data Analysis
+```{r}
+validation
+```
+
+###Build random forest model with full training model
+
+```{r}
+rForest = randomForest(classe ~ ., data = clean_train,
+                            mtry = bestTune)
+predictTraining = predict(rForest)
+table(predictTraining, clean_train$classe)
+```
+
+Predict testing data
+```{r}
+predictTesting = predict(rForest, newdata = test)
+predictTesting
+```
+
+Write the Prediction to files
+```{r}
+# Function to write a vector to files
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_", i ,".txt")
+    write.table(x[i], file = filename, quote = FALSE,
+                row.names = FALSE, col.names = FALSE)
+  }
+}
+# Call the function
+pml_write_files(predictTesting)
+```
